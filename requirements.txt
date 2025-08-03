@@ -5,6 +5,9 @@ langchain-core==0.1.33
 sentence-transformers==2.2.2
 faiss-cpu==1.7.2
 pypdf==3.8.1
+--pre
+--find-links https://download.pytorch.org/whl/torch_stable.html
 transformers==4.30.0
-torch==2.7.1  # Updated to latest stable version
+tokenizers==0.13.3
+torch==2.7.1
 python-dotenv==0.19.0
