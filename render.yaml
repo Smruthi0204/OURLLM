@@ -3,7 +3,7 @@ services:
     type: web
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port=$PORT
+    startCommand: uvicorn main:app --host 0.0.0.0 --port=$PORT --timeout-keep-alive 300 --workers 1
     envVars:
       - key: PORT
         value: 10000
