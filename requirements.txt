@@ -1,12 +1,10 @@
-fastapi==0.68.0
-uvicorn==0.15.0
-langchain-community==0.0.29
-langchain-core==0.1.33
-sentence-transformers==2.2.2
---find-links https://download.pytorch.org/whl/torch_stable.html
-faiss-cpu==1.7.4
-pypdf==3.8.1
-transformers==4.30.0
-tokenizers==0.13.3
-torch==2.7.1
-python-dotenv==0.19.0
+fastapi>=0.68.0
+uvicorn>=0.15.0
+langchain-community>=0.0.29
+langchain-core>=0.1.33
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.2
+pypdf>=3.8.1
+transformers>=4.30.0
+torch>=2.0.0
+python-dotenv>=0.19.0
