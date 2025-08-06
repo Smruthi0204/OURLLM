@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+requests
+python-docx
+PyMuPDF
+beautifulsoup4
+faiss-cpu
+scikit-learn
+sentence-transformers
+transformers
+torch
+accelerate
