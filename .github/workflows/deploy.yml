@@ -1,0 +1,11 @@
+name: Deploy to Fly.io
+on: [push]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions@1.4
+        with:
+          apiToken: ${{ secrets.FLY_API_TOKEN }}
+          appName: ${{ secrets.FLY_APP_NAME }}
