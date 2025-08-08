@@ -1,56 +1,31 @@
-# app/embedder.py
-import os
-import faiss
-import pickle
-from typing import List, Tuple
 from sentence_transformers import SentenceTransformer
-from sklearn.preprocessing import normalize
+import numpy as np
+from typing import List
+import os
+import logging
 
-CHUNK_SIZE = 500  # characters
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-INDEX_FILE = "faiss_index/index.faiss"
-METADATA_FILE = "faiss_index/metadata.pkl"
+logger = logging.getLogger(__name__)
 
-model = SentenceTransformer(EMBEDDING_MODEL)
+# Use tiny model for embeddings
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', device='cpu')
+EMBED_CACHE = {}
 
-def chunk_text(text: str) -> List[str]:
-    paragraphs = text.split("\n\n")
-    chunks, buffer = [], ""
-    for para in paragraphs:
-        if len(buffer) + len(para) < CHUNK_SIZE:
-            buffer += para + "\n\n"
-        else:
-            chunks.append(buffer.strip())
-            buffer = para + "\n\n"
-    if buffer:
-        chunks.append(buffer.strip())
-    return chunks
+def embed_chunks(chunks: List[str]):
+    """Batch process chunks with caching"""
+    global EMBED_CACHE
+    new_chunks = [c for c in chunks if c not in EMBED_CACHE]
+    
+    if new_chunks:
+        embeddings = model.encode(new_chunks, show_progress_bar=False)
+        EMBED_CACHE.update(zip(new_chunks, embeddings))
+    
+    return np.array([EMBED_CACHE[c] for c in chunks])
 
-def embed_chunks(chunks: List[str]) -> Tuple[faiss.IndexFlatL2, List[str]]:
-    vectors = model.encode(chunks, convert_to_numpy=True)
-    vectors = normalize(vectors)
-
-    index = faiss.IndexFlatL2(vectors.shape[1])
-    index.add(vectors)
-
-    # Save index + metadata
-    os.makedirs("faiss_index", exist_ok=True)
-    faiss.write_index(index, INDEX_FILE)
-    with open(METADATA_FILE, 'wb') as f:
-        pickle.dump(chunks, f)
-
-    return index, chunks
-
-def load_index() -> Tuple[faiss.IndexFlatL2, List[str]]:
-    index = faiss.read_index(INDEX_FILE)
-    with open(METADATA_FILE, 'rb') as f:
-        chunks = pickle.load(f)
-    return index, chunks
-
-def search(query: str, top_k: int = 5) -> List[str]:
-    index, chunks = load_index()
-    q_vector = model.encode([query], convert_to_numpy=True)
-    q_vector = normalize(q_vector)
-
-    D, I = index.search(q_vector, top_k)
-    return [chunks[i] for i in I[0]]
+def search(query: str, top_k: int = 3) -> List[str]:
+    """Simplified semantic search"""
+    query_embed = model.encode([query])[0]
+    similarities = [
+        (text, np.dot(query_embed, embed))
+        for text, embed in EMBED_CACHE.items()
+    ]
+    return [text for text, _ in sorted(similarities, key=lambda x: x[1], reverse=True)[:top_k]]
