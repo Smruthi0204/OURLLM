@@ -1,34 +1,29 @@
 # app/llm.py
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
+import os
+import requests
 from typing import List
 
-MODEL_ID = "google/flan-t5-small"
-
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_ID)
-
-generator = pipeline(
-    "text2text-generation",
-    model=model,
-    tokenizer=tokenizer,
-    device=0 if model.device.type == "cuda" else -1,
-    model_kwargs={"torch_dtype": "float32"}
-)
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+MODEL = "mixtral-8x7b-32768"  # Fastest open-weight model
 
 def generate_answer(question: str, context_chunks: List[str]) -> str:
-    context = "\n".join(context_chunks)
-
-    # ✂ Truncate long context
-    if len(context) > 1000:
-        context = context[:1000]
-
-    prompt = f"Context: {context}\n\nQuestion: {question}\nAnswer:"
-
-    result = generator(
-        prompt,
-        max_new_tokens=200,
-        do_sample=False,
-        truncation=True
-    )
-
-    return result[0]["generated_text"]
+    headers = {
+        "Authorization": f"Bearer {os.getenv('GROQ_API_KEY')}",
+        "Content-Type": "application/json"
+    }
+    
+    context = " ".join(context_chunks)[:2000]
+    
+    payload = {
+        "messages": [
+            {"role": "system", "content": "Answer using the provided context"},
+            {"role": "user", "content": f"Context: {context}\nQuestion: {question}"}
+        ],
+        "model": MODEL
+    }
+    
+    try:
+        response = requests.post(GROQ_URL, headers=headers, json=payload)
+        return response.json()["choices"][0]["message"]["content"]
+    except Exception:
+        return "Answer unavailable"
